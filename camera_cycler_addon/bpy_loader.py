@@ -6,7 +6,6 @@ import importlib
 from pathlib import Path
 
 __all__ = (
-    "init",
     "register",
     "unregister",
 )
@@ -14,7 +13,6 @@ __all__ = (
 blender_version = bpy.app.version
 
 def register():
-
     modules = get_all_submodules(Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
 
@@ -24,13 +22,18 @@ def register():
     for module in modules:
         if module.__name__ == __name__:
             continue
+        
         if hasattr(module, "register"):
             module.register()
 
 def unregister():
-
     modules = get_all_submodules(Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
+
+    for module in modules:
+        if module.__name__ == __name__:
+            continue
+        importlib.reload(module)
 
     for cls in reversed(ordered_classes):
         bpy.utils.unregister_class(cls)
@@ -38,6 +41,7 @@ def unregister():
     for module in modules:
         if module.__name__ == __name__:
             continue
+
         if hasattr(module, "unregister"):
             module.unregister()
 
@@ -110,8 +114,7 @@ def iter_my_classes(modules):
     base_types = get_register_base_types()
     for cls in get_classes_in_modules(modules):
         if any(base in base_types for base in cls.__bases__):
-            if not getattr(cls, "is_registered", False):
-                yield cls
+            yield cls
 
 def get_classes_in_modules(modules):
     classes = set()
